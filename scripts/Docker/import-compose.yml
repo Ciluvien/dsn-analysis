@@ -1,0 +1,9 @@
+name: dsn-import
+services:
+  importer:
+    build: ./scripts
+    volumes:
+      - "./data/to_be_imported:/to_be_imported"
+      - "./data/openmetric:/openmetric"
+      - "./data/prometheus-data:/prometheus"
+      - ".log:/usr/src/app/.log"
