@@ -25,10 +25,11 @@ if __name__ == "__main__":
           target = row["target"]
           distance = row["distance"]
           labels = {
-          "station_name": station,
-          "target_id": target
+               "data_source": "SPICE",
+               "station_name": station,
+               "target_id": target
           }
-          om = Metric(name="spice_distance", value=distance, labels=labels, mtype="gauge", munit="km", timestamp=time)
+          om = Metric(name="target_range", value=distance, labels=labels, mtype="gauge", munit="km", timestamp=time)
           ms.insert(om)
 
 

@@ -7,10 +7,12 @@ import datetime as dt
 import multiprocessing as mp
 from os import listdir, path
 import argparse
+from time import time
 
 KERNEL_DIR = path.join("../data/kernels/")
 OUT_PATH = path.join("../data/")
 THREAD_COUNT = mp.cpu_count()
+STEP = 5
 
 # All DSN dish numbers
 DSN_DISH_NUMS = [
@@ -20,11 +22,11 @@ DSN_DISH_NUMS = [
 ]
 
 # 70-m DSN dish numbers to represent each of the three stations
-DSN_STATIONS = [
-    63,
-    14,
-    43
-]
+DSN_STATIONS = {
+    "mdscc": 63,
+    "gdscc": 14,
+    "cdscc": 43
+}
 
 # Missions as extracted from a prometheus query: count(target_range_km) by (target_name)
 # ONLY FOR REFERENCE, missing kernels
@@ -54,6 +56,13 @@ MISSIONS = [
     "-31", "-32"
 ]
 
+SCHEME = {
+    "time": pl.Int64,
+    "station": pl.String,
+    "target": pl.Int32,
+    "distance": pl.Float64
+}
+
 def process(ets, kernel_files):
     # Load necessary SPICE kernels
     for f in kernel_files:
@@ -63,9 +72,9 @@ def process(ets, kernel_files):
     for t, et in ets.items():
             # Get the position of a DSN station
             station_pos_dict = {}
-            for station in DSN_STATIONS:
+            for station, dish in DSN_STATIONS.items():
                 try:
-                    station_pos_dict[station] = spice.spkpos(f"DSS-{station}", et, "J2000", "NONE", "EARTH")[0]
+                    station_pos_dict[station] = spice.spkpos(f"DSS-{dish}", et, "J2000", "NONE", "EARTH")[0]
                 except Exception:
                     print(f"Failed to compute position for {t}, {station}")
 
@@ -79,14 +88,15 @@ def process(ets, kernel_files):
                     # Assume that sat will not be available at future time stamps
                     MISSIONS.remove(sat)
 
+            # Calculate distances between all stations and targets
             data["time"].extend([t]*len(station_pos_dict) * len(sat_pos_dict))
             for station, station_pos in station_pos_dict.items():
                 for sat, sat_pos in sat_pos_dict.items():
                     data["station"].append(station)
-                    data["target"].append(sat)
+                    data["target"].append(int(sat))
                     data["distance"].append(spice.vdist(station_pos, sat_pos))
     spice.kclear()
-    return data
+    return pl.from_dict(data, SCHEME)
 
 
 if __name__ == "__main__":
@@ -96,21 +106,29 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Calculate distances between DSN stations and targets"
     )
-    parser.add_argument("--start",help="Start date", default=start_time)
-    parser.add_argument("--end",help="End date", default=end_time)
+    parser.add_argument("--start",help="Start date in ISO 8601", default=start_time)
+    parser.add_argument("--end",help="End date in ISO 8601", default=end_time)
     args = parser.parse_args()
+
+    if isinstance(args.start, str):
+        args.start = dt.datetime.fromisoformat(args.start).timestamp()
+    if isinstance(args.end, str):
+        args.end = dt.datetime.fromisoformat(args.end).timestamp()
 
     # Load leapsecond SPICE kernel
     f_path = path.join(KERNEL_DIR, "naif0012.tls")
     if path.isfile(f_path):
         spice.furnsh(f_path)
 
-    # Define the time of interest
-    ets = {t: spice.str2et(str(dt.datetime.fromtimestamp(t))) for t in range(int(args.start), int(args.end), 5) }
+    timer_start = time()
+    # Define the times of interest
+    ets = {t: spice.str2et(str(dt.datetime.fromtimestamp(t))) for t in range(int(args.start), int(args.end), STEP) }
+    print(f"Creating timestamps took {time() - timer_start}")
 
-    # Load kernel files
+    # Find all kernel files
     kernel_files = [path.join(KERNEL_DIR, f) for f in listdir(KERNEL_DIR) if path.isfile(path.join(KERNEL_DIR, f))]
 
+    timer_start = time()
     # Create a pool of processes
     with mp.Pool(processes=THREAD_COUNT) as pool:
         # Split the ets dictionary into chunks for each process
@@ -121,13 +139,14 @@ if __name__ == "__main__":
 
         # Process the data in parallel
         results = pool.starmap(process, [(ets_part, kernel_files) for ets_part in ets_parts])
+    print(f"Calculating distances took {time() - timer_start}")
 
-    data = defaultdict(list)
-    for d in results:
-        for key in d:
-            data[key].extend(d[key])
+    timer_start = time()
+    # Collect data into a single dataframe
+    df = pl.concat(results)
+    print(f"Dataframe creation took {time() - timer_start}")
 
-    df = pl.DataFrame(data)
-
+    timer_start = time()
     for station in DSN_STATIONS:
-        df.filter(pl.col("station") == station).write_csv(path.join(OUT_PATH,f"distances{station}.csv"), separator=",")
+        df.filter(pl.col("station") == station).write_csv(path.join(OUT_PATH,f"distances-{station}.csv"), separator=",")
+    print(f"Filtering and writing to file took {time() - timer_start}")
