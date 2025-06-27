@@ -4,23 +4,15 @@ import polars as pl
 from os import path
 from OpenMetric import Metric, MetricSet
 import argparse
+from time import time
 
-CSV_PATH = path.join("../data/distances.csv")
-OUT_PATH = path.join("../data/distances.om")
+CSV_PATH = path.join("../data/distances-full.csv")
+OUT_PATH = path.join("../data/openmetric/")
 
-if __name__ == "__main__":
-     parser = argparse.ArgumentParser(
-          description="Convert distance CSV to OpenMetrics file"
-     )
-     parser.add_argument("--input", help="Path to CSV", default=CSV_PATH)
-     args = parser.parse_args()
-
-     df = pl.read_csv(args.input)
-
+def to_metrics(df):
      ms = MetricSet()
-
      for row in df.iter_rows(named=True):
-          time = row["time"]
+          timestamp = row["time"]
           station = row["station"]
           target = row["target"]
           distance = row["distance"]
@@ -29,13 +21,35 @@ if __name__ == "__main__":
                "station_name": station,
                "target_id": target
           }
-          om = Metric(name="target_range", value=distance, labels=labels, mtype="gauge", munit="km", timestamp=time)
+          om = Metric(name="target_range", value=distance, labels=labels, mtype="gauge", munit="km", timestamp=timestamp)
           ms.insert(om)
+     return ms
 
 
-     om_path = f"{args.input}.om"
-     with open(om_path, "w") as om_file:
-          om_file.write(str(ms))
+if __name__ == "__main__":
+     parser = argparse.ArgumentParser(
+          description="Convert distance CSV to OpenMetrics file"
+     )
+     parser.add_argument("--input", help="Path to CSV", default=CSV_PATH)
+     parser.add_argument("--output", help="Path to output directory", default=OUT_PATH)
+     args = parser.parse_args()
+
+     time_start = time()
+     df = pl.read_csv(args.input)
+     print(f"Reading CSV took {time() - time_start}")
+
+     for df_part in df.partition_by("target"):
+          target = df_part.select("target").head(1).item()
+          time_start = time()
+          ms = to_metrics(df_part)
+          print(f"Creating MetricSet for target {target} took {time() - time_start}")
+          time_start = time()
+          om_path = path.join(args.output, f"{path.basename(args.input)}{target}.om")
+          with open(om_path, "w") as om_file:
+               om_file.write(str(ms))
+               print(f"String creation and writing for {target} took {time() - time_start}")
+
+
 
      # Move file to openmetric folder, then execute command:
      # docker exec -it prometheus promtool tsdb create-blocks-from openmetrics --max-block-duration=7d -r /openmetric/distances14.csv.om /prometheus

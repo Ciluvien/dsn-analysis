@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from collections import defaultdict
+import polars as pl
 
 class MetricFamily:
     def __init__(self, name: str, mtype: str | None = None, munit: str | None = None, mhelp: str | None = None):
@@ -11,12 +12,12 @@ class MetricFamily:
 
     def __str__(self):
         res = []
-        res.append(f"# TYPE {self.name} {self.mtype}\n")
+        res.append(f"# TYPE {self.name} {self.mtype}")
         if self.munit:
-            res.append(f"# UNIT {self.name} {self.munit}\n")
+            res.append(f"# UNIT {self.name} {self.munit}")
         if self.mhelp:
-            res.append(f"# HELP {self.name} {self.mhelp}\n")
-        return "".join(res)
+            res.append(f"# HELP {self.name} {self.mhelp}")
+        return "\n".join(res)
 
     def __eq__(self, other):
         return self.name == other.name
@@ -34,7 +35,7 @@ class Metric:
                  munit: str | None = None,
                  timestamp: int | None = None):
         self.name = f"{name}_{munit}" if munit else name
-        self.labels = dict(sorted(labels.items(), key=lambda item:item[1])) if labels else None
+        self.labels = labels
         self.mtype = mtype
         self.munit = munit
         self.mhelp = mhelp
@@ -106,19 +107,37 @@ class Metric:
 
 
 class MetricSet:
-    def __init__(self, families: defaultdict[MetricFamily, list[Metric]] = defaultdict(list)):
-        self.families = families
+    def __init__(self):
+        self.metrics = set()
 
     def insert(self, metric: Metric):
-        self.families[metric.get_family()].append(metric)
+        self.metrics.add(metric)
+
+    def _generator(self):
+        for metric in self.metrics:
+            yield {
+                "family_string": str(metric.get_family()),
+                "metric_string": str(metric),
+                "labels": metric.labels,
+                "timestamp": metric.timestamp
+            }
 
     def __str__(self):
-        res = []
-        for mfam, ms in self.families.items():
-            res.append(str(mfam))
-            ms.sort()
-            for m in ms:
-                res.append(f"{m}\n")
-        if res:
-            res.append("# EOF")
-        return "".join(dict.fromkeys(res))
+        df = pl.DataFrame({"metrics": self._generator()})\
+            .lazy()\
+            .unnest("metrics")\
+            .unnest("labels")
+
+        sort_cols = sorted(df.collect_schema().names())
+        sort_cols.remove("metric_string")
+
+        return df\
+            .sort(sort_cols, multithreaded=True)\
+            .group_by(pl.col("family_string"))\
+            .agg(pl.col("metric_string").str.join("\n"))\
+            .with_columns(
+                pl.concat_str([pl.col("family_string"), pl.col("metric_string")], separator="\n").alias("full")
+            )\
+            .select(pl.col("full").str.join("\n"))\
+            .collect()\
+            .item() + "\n# EOF"

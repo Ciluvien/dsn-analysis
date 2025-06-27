@@ -6,6 +6,7 @@ import glob
 import threading
 import logging
 import argparse
+from promtool_wrapper import import_all
 
 logger = logging.getLogger(__name__)
 
@@ -82,21 +83,6 @@ if __name__ == "__main__":
         for thread in threads:
             thread.join()
 
-    # Create blocks from the temporary files
-    for f in glob.glob(path.join(temp_dir, '*')):
-        logger.info(f"Creating blocks for {f}")
-
-        # This assumes that the openmetrics directory is mounted at /openmetrics in the prometheus container
-        docker_path = path.join("/openmetric/",path.basename(f))
-
-        result = subprocess.run(
-            ['docker','exec',"-it",'prometheus',
-             'promtool', 'tsdb', 'create-blocks-from', 'openmetrics', '-r', docker_path, args.output]
-            , capture_output=True, text=True)
-        if result.stdout:
-            logger.info(f"{result.stdout.strip()}")
-        if result.stderr:
-            logger.exception(f"{result.stderr.strip()}")
-
+    import_all(temp_dir, "1d")
 
     logger.info(f"Finished processing {args.input}")

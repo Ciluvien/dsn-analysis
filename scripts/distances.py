@@ -108,6 +108,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--start",help="Start date in ISO 8601", default=start_time)
     parser.add_argument("--end",help="End date in ISO 8601", default=end_time)
+    parser.add_argument("--split",help="Split files by station", action="store_true")
     args = parser.parse_args()
 
     if isinstance(args.start, str):
@@ -119,6 +120,9 @@ if __name__ == "__main__":
     f_path = path.join(KERNEL_DIR, "naif0012.tls")
     if path.isfile(f_path):
         spice.furnsh(f_path)
+    else:
+        print("ERROR: missing leapsecond kernel")
+        exit(1)
 
     timer_start = time()
     # Define the times of interest
@@ -147,6 +151,10 @@ if __name__ == "__main__":
     print(f"Dataframe creation took {time() - timer_start}")
 
     timer_start = time()
-    for station in DSN_STATIONS:
-        df.filter(pl.col("station") == station).write_csv(path.join(OUT_PATH,f"distances-{station}.csv"), separator=",")
+    if args.split:
+        for station in DSN_STATIONS:
+            df.filter(pl.col("station") == station).write_csv(path.join(OUT_PATH,f"distances-{station}.csv"), separator=",")
+    else:
+        df.write_csv(path.join(OUT_PATH, "distances-full.csv"), separator=",")
+
     print(f"Filtering and writing to file took {time() - timer_start}")
