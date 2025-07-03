@@ -45,6 +45,7 @@ def dict_to_openmetrics(dic) -> list[Metric]:
             dishes=[dishes]
         for dish in dishes:
             dish_labels = {
+                "data_source" : "DSN Now",
                 "station_name" : station_name,
                 "dish_name" : dish["@name"],
                 "dish_activity" : dish["@activity"]
@@ -62,20 +63,20 @@ def dict_to_openmetrics(dic) -> list[Metric]:
             for target in targets:
                 target_labels = {
                     "target_name" : target["@name"],
-                    "target_id" : target["@id"]
+                    "target_id" : f'-{get_num(target, "@id")}'
                 }
                 target_labels.update(dish_labels)
 
                 metrics.append(Metric("target_round_trip", get_num(target,"@rtlt"), labels=target_labels, timestamp=timestamp, mtype="gauge", munit="seconds"))
 
                 target_up_labels = {
-                    "direction" : "up"
+                    "target_direction" : "up"
                 }
                 target_up_labels.update(target_labels)
                 metrics.append(Metric("target_range", get_num(target,"@uplegRange"), labels=target_up_labels, timestamp=timestamp, mtype="gauge", munit="km"))
 
                 target_down_labels = {
-                    "direction" : "down"
+                    "target_direction" : "down"
                 }
                 target_down_labels.update(target_labels)
                 metrics.append(Metric("target_range", get_num(target,"@downlegRange"), labels=target_down_labels, timestamp=timestamp, mtype="gauge", munit="km"))
