@@ -122,6 +122,9 @@ class MetricSet:
             }
 
     def __str__(self):
+        if not self.metrics:
+            return ""
+
         df = pl.DataFrame({"metrics": self._generator()})\
             .lazy()\
             .unnest("metrics")\
