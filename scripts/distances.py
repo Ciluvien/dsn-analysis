@@ -56,6 +56,8 @@ MISSIONS = [
     "-31", "-32"
 ]
 
+MISSIONS = [ "-74" ]
+
 SCHEME = {
     "time": pl.Int64,
     "station": pl.String,
@@ -101,7 +103,7 @@ def process(ets, kernel_files):
 
 if __name__ == "__main__":
     start_time = dt.datetime(2025,5,1).timestamp()
-    end_time = dt.datetime(2025,7,1).timestamp()
+    end_time = dt.datetime(2025,8,30).timestamp()
 
     parser = argparse.ArgumentParser(
         description="Calculate distances between DSN stations and targets"

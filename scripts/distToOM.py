@@ -36,11 +36,13 @@ if __name__ == "__main__":
 
      time_start = time()
      df = pl.read_csv(args.input)
-     print(f"Reading CSV took {time() - time_start}")
+     targets = pl.Series(df.select("target").unique()).to_list()
+     print(f"Reading CSV for target IDs took {time() - time_start}")
 
-     for df_part in df.partition_by("target"):
-          target = df_part.select("target").head(1).item()
+     for target in targets:
           time_start = time()
+          df_part = pl.scan_csv(args.input).filter(pl.col("target") == target).collect()
+          target = df_part.select("target").head(1).item()
           ms = to_metrics(df_part)
           print(f"Creating MetricSet for target {target} took {time() - time_start}")
           time_start = time()
