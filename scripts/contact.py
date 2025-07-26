@@ -9,6 +9,19 @@ from enum import Enum
 # Distance light travels in one second in km
 LIGHT_SECOND = 299792.458
 
+SCHEMA = {
+    'Time': pl.Datetime,
+    'dish_name': pl.String,
+    'signal_band': pl.String,
+    'signal_direction': pl.String,
+    'station_name': pl.String,
+    'target_id': pl.Int64,
+    'target_name': pl.String,
+    'Value #Data Rate': pl.Int64,
+    'Value #DSN Distance': pl.Int64,
+    'Value #SPICE Distance': pl.Int64,
+}
+
 class Format(Enum):
     HDTN = 1
     ION = 2
@@ -113,7 +126,7 @@ def format_contacts(df: pl.DataFrame, form: Format, start_time: None | pl.Dateti
     ).sort("contact")
 
     df = df.with_columns(
-        (pl.col("range_km") / LIGHT_SECOND).cast(pl.UInt64).alias("owlt"),
+        (pl.col("range_km") / LIGHT_SECOND).round().cast(pl.UInt64).alias("owlt"),
     )
 
     result = ""
@@ -184,10 +197,7 @@ if __name__ == "__main__":
         start_time = None
 
     # Read CSV
-    df = pl.read_csv(args.input, infer_schema_length=10000).drop_nulls()\
-        .with_columns(
-            pl.col("Time").str.to_datetime()
-        )
+    df = pl.read_csv(args.input, schema=SCHEMA)
 
     # Configure polars for easier debugging
     pl.Config.set_tbl_width_chars(110)
