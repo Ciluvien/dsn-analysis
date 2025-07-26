@@ -15,6 +15,7 @@ services:
       - "--storage.tsdb.path=/prometheus"
       - "--web.enable-admin-api"
       - "--storage.tsdb.retention.time=10y"
+      - "--enable-feature=promql-experimental-functions"
     user: "1000:1000"
 
   grafana:

@@ -6,12 +6,15 @@ import json
 import argparse
 from enum import Enum
 
+# Distance light travels in one second in km
+LIGHT_SECOND = 299792.458
 
 class Format(Enum):
     HDTN = 1
     ION = 2
 
 def get_contacts(df: pl.DataFrame):
+    # Add column holding time difference between consecutive samples
     df = df.sort(
         pl.col("dish_name"),
         pl.col("target_name"),
@@ -22,20 +25,42 @@ def get_contacts(df: pl.DataFrame):
         (pl.col("Time").diff().fill_null(pl.duration(minutes=0))).alias("diff")
     )
 
-
+    # Find minimum interval
     interval = df.filter(pl.col("diff") > 0).min().select("diff").item()
-    #print(f"Minimum interval is {interval}")
-
+    # Assign a number to each contact
     df = df.with_columns(
         pl.when(
-            (pl.col("diff") == interval)
-            |
-            (pl.col("diff") == pl.duration(seconds=0))
-        )\
-         .then(0)\
-         .otherwise(1)\
-         .cum_sum().alias("contact")
-    ).group_by(
+            (pl.col("diff") == interval) | (pl.col("diff") == pl.duration(minutes=0))
+        ).then(0)\
+         .otherwise(10)\
+         .cum_sum().alias("contact"))
+
+    # Split contacts when range change is larger than one light second
+    df = df.with_columns(
+        pl.col("Value #DSN Distance").diff().abs().cum_sum().over("contact").alias("Cum DSN"),
+        pl.col("Value #SPICE Distance").diff().abs().cum_sum().over("contact").alias("Cum SPICE")
+    ).with_columns(
+        pl.when(pl.col("Cum SPICE").is_not_null()).then(
+            pl.when(
+                (pl.col("Cum SPICE") > LIGHT_SECOND)
+            ).then(
+                (pl.col("contact") + pl.col("Cum SPICE").floordiv(LIGHT_SECOND).cast(pl.Int64)).alias("contact")
+            ).otherwise(
+                pl.col("contact")
+            )
+        ).otherwise(
+            pl.when(
+                (pl.col("Cum DSN") > LIGHT_SECOND)
+            ).then(
+                (pl.col("contact") + pl.col("Cum DSN").floordiv(LIGHT_SECOND).cast(pl.Int64)).alias("contact")
+            ).otherwise(
+                pl.col("contact")
+            )
+        )
+    )
+
+    # Group contacts and calculate mean distances and data rate
+    df = df.group_by(
         pl.col("dish_name"),
         pl.col("target_name"),
         pl.col("signal_direction"),
@@ -54,7 +79,7 @@ def get_contacts(df: pl.DataFrame):
     return df
 
 
-def format_contacts(df: pl.DataFrame, form: Format, start_time: None | pl.Datetime):
+def format_contacts(df: pl.DataFrame, form: Format, start_time: None | pl.Datetime) -> str:
     df = df.with_columns(
         pl.concat_str("target_name","signal_band",separator="_"),
         pl.concat_str("dish_name","signal_band", separator="_")
@@ -87,15 +112,52 @@ def format_contacts(df: pl.DataFrame, form: Format, start_time: None | pl.Dateti
         pl.col("range_km")
     ).sort("contact")
 
+    df = df.with_columns(
+        (pl.col("range_km") / LIGHT_SECOND).cast(pl.UInt64).alias("owlt"),
+    )
+
     result = ""
     if form == Format.HDTN:
-        df = df.with_columns(
-            (pl.col("range_km") / 299792.458).cast(pl.UInt64).alias("owlt"),
-        ).drop("range_km")
+        df = df.drop("range_km")
         result = json.dumps(json.loads(df.write_json()), indent=4)
 
     elif form == Format.ION:
-        pass
+        def row_to_string(row: dict, mode: str) -> str:
+            if mode == "contact":
+                val = str(int(row["rateBitsPerSec"] / 8))
+            elif mode == "range":
+                val = str(row["owlt"])
+            else:
+                exit(1)
+            if start_time:
+                return " ".join(
+                    (
+                        f"a {mode}",
+                        "+"+str(row["startTime"]),
+                        "+"+str(row["endTime"]),
+                        str(row["source"]),
+                        str(row["dest"]),
+                        val)
+                    )
+            else:
+                return " ".join(
+                    (
+                        f"a {mode}",
+                        str(row["startTime"]),
+                        str(row["endTime"]),
+                        str(row["source"]),
+                        str(row["dest"]),
+                        val
+                    )
+                )
+
+
+        contacts = "\n".join(
+            [row_to_string(row, "contact") for row in df.iter_rows(named=True)]
+        ) + "\n" + "\n".join(
+            [row_to_string(row, "range") for row in df.iter_rows(named=True)]
+        )
+        return contacts
 
     return result
 
@@ -104,12 +166,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Parse the Grafana data for contacts"
     )
-    parser.add_argument("input", help="Path to contacts CSV exported from Grafana")
-    parser.add_argument("-o","--output", help="Path to output file, prints if not given")
-    parser.add_argument("-s","--start_time", help="Start time for relative contact plans")
+    parser.add_argument("input", help="path to contacts CSV exported from Grafana")
+    parser.add_argument("-o","--output", help="path to output file; printing to console otherwise")
+    parser.add_argument("-s","--start_time", help="start time for relative contact plans")
     parser.add_argument("-f","--format",help="DTN contact plan format (HDTN, ION)")
     args = parser.parse_args()
 
+    # Parse args
     if args.format:
         plan_format = Format[args.format]
     else:
@@ -120,18 +183,22 @@ if __name__ == "__main__":
     else:
         start_time = None
 
+    # Read CSV
     df = pl.read_csv(args.input, infer_schema_length=10000).drop_nulls()\
         .with_columns(
             pl.col("Time").str.to_datetime()
         )
 
+    # Configure polars for easier debugging
     pl.Config.set_tbl_width_chars(110)
-    pl.Config.set_tbl_rows(30)
+    pl.Config.set_tbl_rows(100)
     pl.Config.set_tbl_cols(-1)
-    contacts = get_contacts(df)
 
+    # Find contacts and build plan
+    contacts = get_contacts(df)
     plan = format_contacts(contacts, plan_format, start_time)
 
+    # Write output
     if args.output:
         with open(args.output, "w") as out_file:
             out_file.write(plan)
