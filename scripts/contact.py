@@ -23,8 +23,10 @@ SCHEMA = {
 }
 
 class Format(Enum):
+    RAW = 0
     HDTN = 1
     ION = 2
+
 
 def get_contacts(df: pl.DataFrame):
     # Add column holding time difference between consecutive samples
@@ -130,6 +132,8 @@ def format_contacts(df: pl.DataFrame, form: Format, start_time: None | pl.Dateti
     )
 
     result = ""
+    if form == Format.RAW:
+        result = df.write_csv()
     if form == Format.HDTN:
         df = df.drop("range_km")
         result = json.dumps(json.loads(df.write_json()), indent=4)
@@ -182,14 +186,14 @@ if __name__ == "__main__":
     parser.add_argument("input", help="path to contacts CSV exported from Grafana")
     parser.add_argument("-o","--output", help="path to output file; printing to console otherwise")
     parser.add_argument("-s","--start_time", help="start time for relative contact plans")
-    parser.add_argument("-f","--format",help="DTN contact plan format (HDTN, ION)")
+    parser.add_argument("-f","--format",help="DTN contact plan format (RAW, HDTN, ION)")
     args = parser.parse_args()
 
     # Parse args
     if args.format:
         plan_format = Format[args.format]
     else:
-        plan_format = Format.HDTN
+        plan_format = Format.RAW
 
     if args.start_time:
         start_time = pl.Series([args.start_time]).str.to_datetime().item()

@@ -3,11 +3,13 @@
 from os import path, listdir
 import xml.etree.ElementTree as ET
 from OpenMetric import Metric, MetricSet
-from datetime import datetime
+from datetime import datetime, timedelta
 
 INPUT_DIR = path.join("../data/somp2b/")
 OUTPUT_DIR = path.join("../data/openmetric/")
+
 INTERRUPT_INTERVAL = 60*60
+TIME_INCLUDED_BEFORE_RX = 10
 
 
 def get_datetime(string: str) -> datetime | None:
@@ -35,7 +37,7 @@ def get_passes(tree):
             last = elem_time
             continue
         if (elem_time - last).total_seconds() > INTERRUPT_INTERVAL:
-            passes.append((first, last))
+            passes.append((first - timedelta(seconds = TIME_INCLUDED_BEFORE_RX), last))
             first = elem_time
         last = elem_time
     return passes

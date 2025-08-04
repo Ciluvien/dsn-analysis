@@ -55,3 +55,4 @@ if __name__ == "__main__":
 
      # Move file to openmetric folder, then execute command:
      # docker exec -it prometheus promtool tsdb create-blocks-from openmetrics --max-block-duration=7d -r /openmetric/distances14.csv.om /prometheus
+     # Which is implemented in promtool-wrapper.py
