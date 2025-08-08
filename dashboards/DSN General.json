@@ -1,0 +1,1509 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "dashlist",
+      "name": "Dashboard list",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "12.0.2"
+    },
+    {
+      "type": "panel",
+      "id": "grafana-xyzchart-panel",
+      "name": "XYZ Chart",
+      "version": "0.1.0"
+    },
+    {
+      "type": "panel",
+      "id": "heatmap",
+      "name": "Heatmap",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "histogram",
+      "name": "Histogram",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "sebastiangunreben-cdf-panel",
+      "name": "CDF - Cumulative Distribution Function",
+      "version": "0.3.0"
+    },
+    {
+      "type": "panel",
+      "id": "state-timeline",
+      "name": "State timeline",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "text",
+      "name": "Text",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "xychart",
+      "name": "XY Chart",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 19,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Periods during which no data was received for signals.\nAnnotations provide reasons if not due to DSN engineering.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "red",
+                "mode": "fixed"
+              },
+              "custom": {
+                "axisPlacement": "auto",
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "fieldMinMax": false,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #Signal"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Signal Data"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value #Dish"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Dish Data"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 1
+          },
+          "id": 5,
+          "options": {
+            "alignValue": "left",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "never",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "absent(dish_array_bool)",
+              "format": "table",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "Dish"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "disableTextWrap": false,
+              "editorMode": "code",
+              "expr": "absent(signal_data_rate_b_per_s) ",
+              "format": "table",
+              "fullMetaSearch": false,
+              "includeNullMetadata": true,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "Signal",
+              "useBackend": false
+            }
+          ],
+          "title": "Periods of Missing Data",
+          "type": "state-timeline"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 16,
+            "w": 12,
+            "x": 12,
+            "y": 1
+          },
+          "id": 22,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "# Variable Guide\nThe advice given here applies to all dashboards.\n\nMetrics:\n- Selects metrics for the exploration section\n\nStations: \n- Set the Deep Space Communication Complex\n- Important when looking at wind speed, elevation and azimuth \n- Remember that CDSCC is in the southern hemisphere\n\nDishes:\n- The selectable values depend on the stations variable.\n\nTargets:\n- Consult the DSN Targets dashboard for long names.\n- Exclude VGR1, VGR2, JNO and NHPC for distance related visualizations to get a better view of the closer spacecraft.\n\n\n",
+            "mode": "markdown"
+          },
+          "pluginVersion": "12.0.2",
+          "title": "",
+          "type": "text"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 9
+          },
+          "id": 23,
+          "options": {
+            "includeVars": false,
+            "keepTime": false,
+            "maxItems": 10,
+            "query": "",
+            "showFolderNames": true,
+            "showHeadings": true,
+            "showRecentlyViewed": false,
+            "showSearch": true,
+            "showStarred": false,
+            "tags": []
+          },
+          "pluginVersion": "12.0.2",
+          "title": "Dashboard Overview",
+          "type": "dashlist"
+        }
+      ],
+      "title": "Meta Information",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 20,
+      "panels": [
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 24,
+            "x": 0,
+            "y": 279
+          },
+          "id": 24,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "# Usage\nThe graphs of this section depend on the metrics variable.\n\nPlease select the metric you want to plot using the variable selector.\n\nSince some metrics do not contain target names, the filter does not effect the visualization of this section.\n\nThe metric on the horizontal axis of the Metric Explorer panel has to set manually in the panel configuration.\n\n",
+            "mode": "markdown"
+          },
+          "pluginVersion": "12.0.2",
+          "title": "",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "fieldMinMax": false,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "__systemRef": "hideSeriesFrom",
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "exclude",
+                    "names": [
+                      "DSS65"
+                    ],
+                    "prefix": "All except:",
+                    "readOnly": true
+                  }
+                },
+                "properties": []
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 344
+          },
+          "id": 14,
+          "options": {
+            "complementary": false,
+            "linewidth": 3,
+            "scaling": 1,
+            "showXGrid": true,
+            "showXThresholds": false,
+            "showYGrid": true,
+            "showYThresholds": false,
+            "xAxisExtents": {
+              "max": "",
+              "min": ""
+            },
+            "xAxisTitle": {
+              "showxoffset": false,
+              "showyoffset": true,
+              "text": "",
+              "textSize": 12,
+              "yoffset": 30
+            },
+            "xMargins": {
+              "lower": 40,
+              "upper": 10
+            },
+            "xthresholds": {
+              "lowerLabel": "",
+              "upperLanel": ""
+            },
+            "yAxisExtents": {
+              "max": "",
+              "min": ""
+            },
+            "yAxisTitle": {
+              "showxoffset": true,
+              "showyoffset": false,
+              "text": "P(x <= X)",
+              "textSize": 12,
+              "xoffset": 30
+            },
+            "yMargins": {
+              "lower": 40,
+              "upper": 10
+            },
+            "ythresholds": {
+              "lowerLabel": "",
+              "upperLanel": ""
+            }
+          },
+          "pluginVersion": "0.3.0",
+          "targets": [
+            {
+              "disableTextWrap": false,
+              "editorMode": "code",
+              "expr": "{__name__=~\"$metrics\", station_name=~\"$stations\", dish_name=~\"$dishes\"}",
+              "format": "table",
+              "fullMetaSearch": false,
+              "includeNullMetadata": true,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A",
+              "useBackend": false,
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "$metrics CDF",
+          "transformations": [
+            {
+              "id": "groupingToMatrix",
+              "options": {
+                "columnField": "dish_name",
+                "rowField": "Time",
+                "valueField": "Value"
+              }
+            },
+            {
+              "id": "prepareTimeSeries",
+              "options": {
+                "format": "multi"
+              }
+            }
+          ],
+          "type": "sebastiangunreben-cdf-panel"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 354
+          },
+          "id": 16,
+          "options": {
+            "combine": false,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "editorMode": "code",
+              "expr": "{__name__=~\"$metrics\", station_name=~\"$stations\", dish_name=~\"$dishes\"}",
+              "format": "table",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "$metrics by Dish",
+          "transformations": [
+            {
+              "id": "filterByValue",
+              "options": {
+                "filters": [
+                  {
+                    "config": {
+                      "id": "regex",
+                      "options": {
+                        "value": "NaN"
+                      }
+                    },
+                    "fieldName": "Value"
+                  }
+                ],
+                "match": "any",
+                "type": "exclude"
+              }
+            },
+            {
+              "id": "groupingToMatrix",
+              "options": {
+                "columnField": "dish_name",
+                "emptyValue": "null",
+                "rowField": "Time",
+                "valueField": "Value"
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Value": true
+                },
+                "includeByName": {},
+                "indexByName": {},
+                "renameByName": {}
+              }
+            }
+          ],
+          "type": "histogram"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Does not work for dish metrics",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 354
+          },
+          "id": 17,
+          "options": {
+            "combine": false,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "editorMode": "code",
+              "expr": "{__name__=~\"$metrics\", station_name=~\"$stations\", dish_name=~\"$dishes\"}",
+              "format": "table",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "$metrics by Target",
+          "transformations": [
+            {
+              "id": "filterByValue",
+              "options": {
+                "filters": [
+                  {
+                    "config": {
+                      "id": "regex",
+                      "options": {
+                        "value": "NaN"
+                      }
+                    },
+                    "fieldName": "Value"
+                  }
+                ],
+                "match": "any",
+                "type": "exclude"
+              }
+            },
+            {
+              "id": "groupingToMatrix",
+              "options": {
+                "columnField": "target_name",
+                "emptyValue": "null",
+                "rowField": "Time",
+                "valueField": "Value"
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Value": true
+                },
+                "includeByName": {},
+                "indexByName": {},
+                "renameByName": {}
+              }
+            }
+          ],
+          "type": "histogram"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Edit the X field manually and select Y field in the legend, Not effected by variables",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 50,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "pointShape": "circle",
+                "pointSize": {
+                  "fixed": 5
+                },
+                "pointStrokeWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "show": "points"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "__systemRef": "hideSeriesFrom",
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "exclude",
+                    "names": [
+                      "dish_azimuth_angle_degrees"
+                    ],
+                    "prefix": "All except:",
+                    "readOnly": true
+                  }
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 362
+          },
+          "id": 10,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mapping": "auto",
+            "series": [
+              {
+                "frame": {
+                  "matcher": {
+                    "id": "byIndex",
+                    "options": 0
+                  }
+                },
+                "x": {
+                  "matcher": {
+                    "id": "byName",
+                    "options": "dish_elevation_angle_degrees"
+                  }
+                }
+              }
+            ],
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "editorMode": "code",
+              "expr": "{data_source=\"DSN Now\"}",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Metric Explorer",
+          "transformations": [
+            {
+              "id": "joinByLabels",
+              "options": {
+                "join": [
+                  "dish_name",
+                  "dish_activity",
+                  "station_name"
+                ],
+                "value": "__name__"
+              }
+            }
+          ],
+          "type": "xychart"
+        }
+      ],
+      "title": "Exploring the Metrics",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 2
+      },
+      "id": 21,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "For Targets: $targets",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 17,
+            "w": 24,
+            "x": 0,
+            "y": 280
+          },
+          "id": 15,
+          "interval": "5s",
+          "maxDataPoints": 8000,
+          "options": {
+            "hudBgColor": "#f4f5f5",
+            "pointColor": "red",
+            "pointSize": 3,
+            "series": {
+              "x": "Value #A",
+              "y": "Value #B",
+              "z": "Value #C"
+            },
+            "seriesMapping": "manual",
+            "themeColor": "#000000"
+          },
+          "pluginVersion": "0.1.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sin((dish_azimuth_angle_degrees{station_name=~\"$stations\", dish_name=~\"$dishes\"} != 180 != 360 != 120 != 0) * 3.1415 / 180) * on(dish_name,dish_activity) group_right() (target_range_km{data_source=\"DSN Now\", target_name=~\"$targets\", station_name=~\"$stations\", dish_name=~\"$dishes\"} > 0)  * on(dish_name, dish_activity) group_left cos((dish_elevation_angle_degrees{station_name=~\"$stations\", dish_name=~\"$dishes\"} != 90 != 88 > 5) * 3.1415 / 180)",
+              "format": "table",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "editorMode": "code",
+              "expr": "(target_range_km{data_source=\"DSN Now\", target_name=~\"$targets\", dish_activity=\"Spacecraft Telemetry, Tracking, and Command\"} > 0)  * on(dish_name, dish_activity) group_left() sin((dish_elevation_angle_degrees  != 90 > 5) * 3.1415 / 180) ",
+              "format": "table",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "cos((dish_azimuth_angle_degrees{station_name=~\"$stations\", dish_name=~\"$dishes\"}!= 180 != 360 != 0 != 120) * 3.1415 / 180) * on(dish_name,dish_activity) group_right() (target_range_km{data_source=\"DSN Now\", target_name=~\"$targets\", dish_name=~\"$dishes\", station_name=~\"$stations\"} > 0)  * on(dish_name, dish_activity) group_left cos((dish_elevation_angle_degrees{station_name=~\"$stations\", dish_name=~\"$dishes\"} != 90 != 88 > 5) * 3.1415 / 180)",
+              "format": "table",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "C"
+            }
+          ],
+          "title": "Target Range and Position - $stations",
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "filterByValue",
+              "options": {
+                "filters": [
+                  {
+                    "config": {
+                      "id": "isNull",
+                      "options": {}
+                    },
+                    "fieldName": "Value #A"
+                  },
+                  {
+                    "config": {
+                      "id": "isNull",
+                      "options": {}
+                    },
+                    "fieldName": "Value #C"
+                  },
+                  {
+                    "config": {
+                      "id": "isNull",
+                      "options": {}
+                    },
+                    "fieldName": "Value #B"
+                  }
+                ],
+                "match": "any",
+                "type": "exclude"
+              }
+            },
+            {
+              "disabled": true,
+              "id": "filterByValue",
+              "options": {
+                "filters": [
+                  {
+                    "config": {
+                      "id": "regex",
+                      "options": {
+                        "value": "VGR.*|NHPC|JNO"
+                      }
+                    },
+                    "fieldName": "target_name"
+                  }
+                ],
+                "match": "any",
+                "type": "exclude"
+              }
+            }
+          ],
+          "type": "grafana-xyzchart-panel"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "fieldMinMax": false,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Date Rate (log10(bps))"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 331
+          },
+          "id": 11,
+          "options": {
+            "complementary": false,
+            "linewidth": 3,
+            "scaling": 1,
+            "showXGrid": true,
+            "showXThresholds": false,
+            "showYGrid": true,
+            "showYThresholds": false,
+            "xAxisExtents": {
+              "max": "",
+              "min": ""
+            },
+            "xAxisTitle": {
+              "showxoffset": false,
+              "showyoffset": true,
+              "text": "",
+              "textSize": 12,
+              "yoffset": 30
+            },
+            "xMargins": {
+              "lower": 40,
+              "upper": 10
+            },
+            "xthresholds": {
+              "lowerLabel": "",
+              "upperLanel": ""
+            },
+            "yAxisExtents": {
+              "max": "",
+              "min": ""
+            },
+            "yAxisTitle": {
+              "showxoffset": true,
+              "showyoffset": false,
+              "text": "P(x <= X)",
+              "textSize": 12,
+              "xoffset": 30
+            },
+            "yMargins": {
+              "lower": 40,
+              "upper": 10
+            },
+            "ythresholds": {
+              "lowerLabel": "",
+              "upperLanel": ""
+            }
+          },
+          "pluginVersion": "0.3.0",
+          "targets": [
+            {
+              "editorMode": "code",
+              "expr": "log10(signal_data_rate_b_per_s > 0)",
+              "format": "table",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Logarithmic Data Rate CDF",
+          "type": "sebastiangunreben-cdf-panel"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Only accounting for power higher than -200 dBm",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "fieldMinMax": false,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Power Received (dBm)"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 331
+          },
+          "id": 12,
+          "options": {
+            "complementary": false,
+            "linewidth": 3,
+            "scaling": 1,
+            "showXGrid": true,
+            "showXThresholds": false,
+            "showYGrid": true,
+            "showYThresholds": false,
+            "xAxisExtents": {
+              "max": -80,
+              "min": ""
+            },
+            "xAxisTitle": {
+              "showxoffset": false,
+              "showyoffset": true,
+              "text": "d B m",
+              "textSize": 12,
+              "yoffset": 30
+            },
+            "xMargins": {
+              "lower": 40,
+              "upper": 10
+            },
+            "xthresholds": {
+              "lowerLabel": "",
+              "upperLanel": ""
+            },
+            "yAxisExtents": {
+              "max": "",
+              "min": ""
+            },
+            "yAxisTitle": {
+              "showxoffset": true,
+              "showyoffset": false,
+              "text": "P(x <= X)",
+              "textSize": 12,
+              "xoffset": 30
+            },
+            "yMargins": {
+              "lower": 40,
+              "upper": 10
+            },
+            "ythresholds": {
+              "lowerLabel": "",
+              "upperLanel": ""
+            }
+          },
+          "pluginVersion": "0.3.0",
+          "targets": [
+            {
+              "editorMode": "code",
+              "expr": "signal_power_received_dBm > -200\n",
+              "format": "table",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            }
+          ],
+          "title": "Power Received CDF",
+          "type": "sebastiangunreben-cdf-panel"
+        }
+      ],
+      "title": "General Visualizations",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 3
+      },
+      "id": 26,
+      "panels": [
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 17,
+            "w": 12,
+            "x": 0,
+            "y": 281
+          },
+          "id": 27,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "# Guide: How to export a contact plan\n## Step 1: Download data\n- Select dishes and targets using the variable selectors\n- Set time span using the time picker\n- Check availability of data using \"Contact Plan Data\" panel\n- Select the three dots menu in the upper right corner of the \"Contact Plan Data\" panel\n- Select \"Inspect\" and thereafter \"Data\"\n- Expand the data options line by clicking on the arrow head\n- Check the \"Apply panel transformations\" box\n- Press the \"Download CSV\" button  \n\n## Step 2: Convert to contact plan format\n- Call the contact.py command line utility on the downloaded file\n- For usage help see: \n```\npython contact.py -h\n```\n- Example:\n```\npython contact.py downloaded_contact_plan_data.csv --format HDTN\n```\n",
+            "mode": "markdown"
+          },
+          "pluginVersion": "12.0.2",
+          "title": "",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 12,
+            "y": 281
+          },
+          "id": 25,
+          "interval": "5s",
+          "options": {
+            "calculate": false,
+            "cellGap": 1,
+            "color": {
+              "exponent": 0.5,
+              "fill": "dark-orange",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Oranges",
+              "steps": 64
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": true
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "tooltip": {
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "editorMode": "code",
+              "expr": "signal_data_rate_b_per_s{station_name=~\"$stations\", target_name=~\"$targets\", dish_activity=\"Spacecraft Telemetry, Tracking, and Command\",signal_activity=\"true\"}",
+              "format": "table",
+              "interval": "",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "Data Rate",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              }
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "target_range_km{data_source=~\"DSN Now\", station_name=~\"$stations\", target_name=~\"$targets\"}",
+              "format": "table",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "DSN Distance"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "target_range_km{data_source=~\"SPICE\", station_name=~\"$stations\"}",
+              "format": "table",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "SPICE Distance"
+            }
+          ],
+          "title": "Contact Plan Data",
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "Time",
+                    "dish_name",
+                    "signal_band",
+                    "signal_direction",
+                    "station_name",
+                    "target_id",
+                    "target_name",
+                    "Value #Data Rate",
+                    "Value #DSN Distance",
+                    "Value #SPICE Distance"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "filterByValue",
+              "options": {
+                "filters": [
+                  {
+                    "config": {
+                      "id": "isNotNull",
+                      "options": {}
+                    },
+                    "fieldName": "Value #Data Rate"
+                  }
+                ],
+                "match": "all",
+                "type": "include"
+              }
+            }
+          ],
+          "type": "heatmap"
+        }
+      ],
+      "title": "Contact Plans",
+      "type": "row"
+    }
+  ],
+  "schemaVersion": 41,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".+",
+        "allowCustomValue": false,
+        "current": {
+          "text": [
+            "$__all"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "description": "Ground Station Complex",
+        "includeAll": true,
+        "label": "Stations",
+        "multi": true,
+        "name": "stations",
+        "options": [
+          {
+            "selected": false,
+            "text": "cdscc",
+            "value": "cdscc"
+          },
+          {
+            "selected": false,
+            "text": "mdscc",
+            "value": "mdscc"
+          },
+          {
+            "selected": false,
+            "text": "gdscc",
+            "value": "gdscc"
+          }
+        ],
+        "query": "cdscc, mdscc, gdscc",
+        "type": "custom"
+      },
+      {
+        "allValue": ".+",
+        "allowCustomValue": false,
+        "current": {},
+        "definition": "label_values({station_name=~\"$stations\"},dish_name)",
+        "description": "",
+        "includeAll": true,
+        "label": "Dishes",
+        "multi": true,
+        "name": "dishes",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values({station_name=~\"$stations\"},dish_name)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": ".+",
+        "allowCustomValue": false,
+        "current": {},
+        "definition": "label_values(target_name)",
+        "description": "",
+        "includeAll": true,
+        "label": "Targets",
+        "multi": true,
+        "name": "targets",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(target_name)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "allowCustomValue": false,
+        "current": {},
+        "definition": "metrics(^(?!g|p|n|scr|up).*)",
+        "label": "Metrics",
+        "name": "metrics",
+        "options": [],
+        "query": {
+          "qryType": 2,
+          "query": "metrics(^(?!g|p|n|scr|up).*)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
+        "regex": "",
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "2025-05-27T04:51:43.364Z",
+    "to": "2025-07-17T18:19:24.428Z"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "DSN General",
+  "uid": "d48b3156-7a87-44e2-8dbc-2aa14ed010f1",
+  "version": 229,
+  "weekStart": ""
+}
