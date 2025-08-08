@@ -35,7 +35,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Import OpenMetric data into a promtheus docker container"
     )
-    parser.add_argument("-d","--directory",help="Directory to be imported", default=INPUT_DIR)
+    parser.add_argument("-d","--directory",help="Directory to be imported, Prometheus needs to have this mounted", default=INPUT_DIR)
     parser.add_argument("-b","--block_duration",help="Maximum block duration", default=BLOCK_DURATION)
     parser.add_argument("-l","--log",help="Loglevel",default="info")
     args = parser.parse_args()
