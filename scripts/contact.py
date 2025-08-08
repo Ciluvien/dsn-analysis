@@ -17,7 +17,7 @@ SCHEMA = {
     'station_name': pl.String,
     'target_id': pl.Int64,
     'target_name': pl.String,
-    'Value #Data Rate': pl.Int64,
+    'Value #Data Rate': pl.Float64,
     'Value #DSN Distance': pl.Int64,
     'Value #SPICE Distance': pl.Int64,
 }

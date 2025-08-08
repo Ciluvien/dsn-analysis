@@ -27,9 +27,9 @@ def import_all(directory, block_duration):
              '-r', docker_path, "/prometheus/"]
             , capture_output=True, text=True)
         if result.stdout:
-            logger.info(f"{result.stdout.strip()}")
+            logger.info(f"promtool stdout:\n{result.stdout.strip()}")
         if result.stderr:
-            logger.exception(f"{result.stderr.strip()}")
+            logger.info(f"promtool stderr:\n{result.stderr.strip()}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -46,7 +46,7 @@ if __name__ == "__main__":
             raise ValueError('Invalid log level: %s' % args.log)
     else:
         numeric_level = logging.INFO
-    logging.basicConfig(filename='.log', level=numeric_level)
+    logging.basicConfig(level=numeric_level)
 
     logger.info(f"Start parsing OpenMetric files at: {args.directory}")
 

@@ -169,7 +169,7 @@ if __name__ == "__main__":
             raise ValueError('Invalid log level: %s' % args.log)
     else:
         numeric_level = logging.INFO
-    logging.basicConfig(filename='.log', level=numeric_level)
+    logging.basicConfig(level=numeric_level)
 
 
     # Process batches separately

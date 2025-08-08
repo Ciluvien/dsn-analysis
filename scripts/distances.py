@@ -56,8 +56,6 @@ MISSIONS = [
     "-31", "-32"
 ]
 
-MISSIONS = [ "-74" ]
-
 SCHEME = {
     "time": pl.Int64,
     "station": pl.String,
@@ -126,15 +124,15 @@ if __name__ == "__main__":
         print("ERROR: missing leapsecond kernel")
         exit(1)
 
-    timer_start = time()
+    full_timer_start = time()
     # Define the times of interest
     ets = {t: spice.str2et(str(dt.datetime.fromtimestamp(t))) for t in range(int(args.start), int(args.end), STEP) }
-    print(f"Creating timestamps took {time() - timer_start}")
+    print(f"Creating timestamps took {time() - full_timer_start}")
 
     # Find all kernel files
     kernel_files = [path.join(KERNEL_DIR, f) for f in listdir(KERNEL_DIR) if path.isfile(path.join(KERNEL_DIR, f))]
 
-    timer_start = time()
+    processing_timer_start = time()
     # Create a pool of processes
     with mp.Pool(processes=THREAD_COUNT) as pool:
         # Split the ets dictionary into chunks for each process
@@ -145,7 +143,7 @@ if __name__ == "__main__":
 
         # Process the data in parallel
         results = pool.starmap(process, [(ets_part, kernel_files) for ets_part in ets_parts])
-    print(f"Calculating distances took {time() - timer_start}")
+    print(f"Calculating distances took {time() - processing_timer_start}")
 
     timer_start = time()
     # Collect data into a single dataframe
@@ -160,3 +158,4 @@ if __name__ == "__main__":
         df.write_csv(path.join(OUT_PATH, "distances-full.csv"), separator=",")
 
     print(f"Filtering and writing to file took {time() - timer_start}")
+    print(f"Complete execution took {time() - full_timer_start}")
