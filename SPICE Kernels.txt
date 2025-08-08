@@ -1,0 +1,62 @@
+The following table contains names of missions and corresponding kernel sources.
+Listed below are additionally required kernels.
+Most missions require multiple kernels (e.g., predicted and recorded or planetary pck kernels like M20 for Mars).
+
+Kernels mostly from https://naif.jpl.nasa.gov/pub/naif/
+Names are mostly from https://www.cdscc.nasa.gov/Pages/trackingtoday.html or https://eyes.nasa.gov/apps/dsn-now/config.xml
+
+IDs are NAIF integer codes,
+
+SHORT   | Name                                   |  ID  | Source
+--------+----------------------------------------+------+--------
+ACE     | Advanced Composition Explorer          | - 92 |
+AGM1    |                                        | - 90 |
+BEPI    | Bepi-Colombo                           | -121 |https://naif.jpl.nasa.gov/pub/naif/BEPICOLOMBO/kernels/spk/
+BIOS    | BioSentinel                            | -  7 |
+CAPS    | Capstone: Lunar mission                | -176 |
+CGO     | Cygnus                                 | -171 |
+CHDR    | Chandra X-ray Space Telescope          | -151 |TOO OLD: https://naif.jpl.nasa.gov/pub/naif/CHANDRA/kernels/spk/
+DSCO    | Deep Space Climate Observatory         | - 78 |
+EMM     | Emirates Mars Mission: Hope probe      | - 62 |
+EURC    | Europa Clipper                         | -159 |https://naif.jpl.nasa.gov/pub/naif/EUROPACLIPPER/kernels/spk/
+HYB2    | Hayabus 2: asteroid mission            | - 37 |
+JNO     | Juno: Jupiter orbiting mission         | - 61 |https://naif.jpl.nasa.gov/pub/naif/JUNO/kernels/spk/
+JWST    | James Webb Space Telescope             | -170 |https://naif.jpl.nasa.gov/pub/naif/JWST/kernels/spk/
+KPLO    | Korea Pathfinder Lunar Orbiter         | -155 |
+LRO     | Lunar Reconnaissance Orbiter           | - 85 |TOO OLD: https://naif.jpl.nasa.gov/pub/naif/pds/data/lro-l-spice-6-v1.0/lrosp_1000/data/spk/
+LTB     | Lunar Trailblazer                      | -242 |
+LUCY    | Lucy: Jupiter’s trojan asteroids       | - 49 |https://naif.jpl.nasa.gov/pub/naif/LUCY/kernels/spk/
+M01O    | Mars Odyssey                           | - 53 |https://naif.jpl.nasa.gov/pub/naif/M01/kernels/spk/
+M20     | Mars'20 Perserverance & Ingenuity      | -168 |https://naif.jpl.nasa.gov/pub/naif/MARS2020/kernels/spk/ and https://naif.jpl.nasa.gov/pub/naif/MARS2020/kernels/pck/
+MEX     | Mars Express                           | - 41 |https://naif.jpl.nasa.gov/pub/naif/MEX/kernels/spk/
+MMS 1   | MMS 1 Magnetospheric MultiScale        | -108 |
+MMS 2   | MMS 2 Magnetospheric MultiScale        | -109 |
+MMS 3   | MMS 3 Magnetospheric MultiScale        | -110 |
+MMS 4   | MMS 4 Magnetospheric MultiScale        | -113 |
+MRO     | Mars Reconnaissance Orbiter            | - 74 |https://naif.jpl.nasa.gov/pub/naif/MRO/kernels/spk/
+MSL     | Mars Science Laboratory Curiosity      | - 76 |https://naif.jpl.nasa.gov/pub/naif/MSL/kernels/spk/
+MVN     | MAVEN: Mars atmosphere mission         | -202 |
+NHPC    | New Horizons: Pluto & beyond           | - 98 |https://naif.jpl.nasa.gov/pub/naif/pds/data/nh-j_p_ss-spice-6-v1.0/nhsp_1000/data/spk/
+ORX     | Osiris-Rex: Asteroid Bennu sample      | - 64 |https://naif.jpl.nasa.gov/pub/naif/ORX/kernels/spk/
+PSYC    | Psyche: asteroid mission               | -255 |https://naif.jpl.nasa.gov/pub/naif/PSYCHE/kernels/spk/
+SOHO    | Solar & Heliospheric Observatory       | - 21 |
+SPP     | Parker Solar Probe                     | - 96 |https://psp-gateway.jhuapl.edu/website/Ancillary/LongTermEphemerisPredict/
+STA     | STEREO A: solar imagery                | -234 |INSUFFICIENT: https://naif.jpl.nasa.gov/pub/naif/STEREO/kernels/spk/
+SWFO    | Space Weather Follow On                | -231 |
+TDR8    | Tracking and Data Relay Satellite Sys. | -138 |INSUFFICIENT: https://naif.jpl.nasa.gov/pub/naif/TDRSS/kernels/spk/
+TESS    | Transiting Exoplanet Survey Satellite  | - 95 |
+TGO     | Exo Mars: Trace Gas Orbiter            | -143 |
+THB     | Themis B: Moon study                   | -192 |
+THC     | Themis C: Moon study                   | -193 |
+VGR1    | Voyager 1: interstellar space          | - 31 |https://naif.jpl.nasa.gov/pub/naif/VOYAGER/kernels/spk/
+VGR2    | Voyager 2: interstellar space          | - 32 |https://naif.jpl.nasa.gov/pub/naif/VOYAGER/kernels/spk/
+WIND    | Solar wind study                       | -  8 |
+XMM     | X-ray Multi-Mirror Mission             | - 60 |
+
+
+Kernel                           | Reason                                 |
+---------------------------------+----------------------------------------+--------
+de430.bsp                        | Planets to solar system                | https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/
+earthstns_itrf93_201023.bsp      | DSN stations to earth                  | https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/stations/
+earth_000101_250919_250623.bpc   | Earth orientation data                 | https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/
+naif0012.tls                     | Time conversions                       | https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/
