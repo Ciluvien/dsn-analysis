@@ -81,7 +81,7 @@ This will process and import all given archives.
 
 ### NASA NAIF SPICE distances
 #### Distance calculation
-A list of sources for SPICE kernels can be found [here](./SPICE Kernels.txt).
+A list of sources for SPICE kernels can be found [here](SPICE%20Kernels.txt).
 Which kernels you select from these sources depends on the time frame of your analysis.
 
 Place all kernels into the ./data/kernels directory.
