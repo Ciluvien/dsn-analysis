@@ -2,12 +2,13 @@
 
 import polars as pl
 from os import path
-from OpenMetric import Metric, MetricSet
+from ...common.OpenMetric import Metric, MetricSet
 import argparse
 from time import time
 
-CSV_PATH = path.join("../data/distances-full.csv")
-OUT_PATH = path.join("../data/openmetric/")
+DATA_DIR = path.abspath(path.join(path.dirname(__file__),"../../../data/"))
+CSV_PATH = path.join(DATA_DIR,"distances-full.csv")
+OUT_PATH = path.join(DATA_DIR,"../data/openmetric/")
 
 def to_metrics(df):
      ms = MetricSet()
@@ -50,9 +51,3 @@ if __name__ == "__main__":
           with open(om_path, "w") as om_file:
                om_file.write(str(ms))
                print(f"String creation and writing for {target} took {time() - time_start}")
-
-
-
-     # Move file to openmetric folder, then execute command:
-     # docker exec -it prometheus promtool tsdb create-blocks-from openmetrics --max-block-duration=7d -r /openmetric/distances14.csv.om /prometheus
-     # Which is implemented in promtool-wrapper.py

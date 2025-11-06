@@ -72,7 +72,7 @@ def xml_path_to_dict(xml):
     try:
         parsed = xmltodict.parse("".join(rewrite(xml_string)))
     except Exception:
-        logger.info(f"Failed to parse: {xml}")
+        logger.warning(f"Failed to parse: {xml}")
         parsed = None
     return parsed
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
             if path.isdir(temp_dir):
                 rmtree(temp_dir)
         else:
-            logger.info("Could not process input path")
+            logger.error("Could not process input path")
             exit(1)
 
         # TODO: find way to store output files in batch processing

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
-from rewrite import xml_path_to_dict
 import argparse
 import json
-from OpenMetric import Metric, MetricSet
-from os import path, listdir, mkdir
-from shutil import rmtree
 import tempfile
 import zipfile
+import logging
 from random import randint
 from time import time
-import logging
+from os import path, listdir, mkdir
+from shutil import rmtree
+from .rewrite import xml_path_to_dict
+from ...common.OpenMetric import Metric, MetricSet
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +149,67 @@ def process_batch(directory: str, is_xml: bool) -> MetricSet:
 
     return result
 
+def openmetrify(is_batch: bool, is_xml: bool, input_path: str, output_path: str):
+    # Process batches separately
+    if is_batch:
+        file_name = path.basename(input_path)
+        if path.isdir(input_path):
+            start = time()
+            result = process_batch(input_path, is_xml)
+            logger.info(f"Processing {file_name} took {time()-start}")
+        elif path.isfile(input_path) and ".zip" in input_path:
+            temp_dir_base = tempfile.gettempdir() + "/openmetrify_extracted"
+
+            # create random temp directory without conflict
+            suffix=randint(0,999999)
+            temp_dir = f"{temp_dir_base}{suffix:06d}"
+            while path.isdir(temp_dir):
+                suffix=randint(0,999999)
+                temp_dir=f"{temp_dir_base}{suffix:06d}"
+            mkdir(temp_dir)
+
+            # Extract archive
+            start = time()
+            with zipfile.ZipFile(input_path, "r") as zipf:
+                zipf.extractall(temp_dir)
+            logger.info(f"Extracting {file_name} took {time()-start}")
+
+            # Process contents
+            start = time()
+            result = process_batch(temp_dir, is_xml)
+            logger.info(f"Processing {file_name} took {time()-start}")
+            if path.isdir(temp_dir):
+                rmtree(temp_dir)
+        else:
+            logger.info(f"Could not process input path {input_path}")
+            exit(1)
+
+        start = time()
+        res_string = str(result)
+        logger.info(f"Creating output string for {file_name} took {time()-start}")
+        start = time()
+        with open(output_path, "w") as om_file:
+            om_file.write(res_string)
+        logger.info(f"Writing output for {file_name} took {time()-start}")
+
+    else: # Single file processing mode
+        if is_xml:
+            dic = xml_path_to_dict(input_path)
+        else:
+            with open(input_path) as json_file:
+                dic = json.loads(json_file.read())
+
+        try:
+            om = dict_to_openmetrics(dic)
+        except Exception:
+            logger.error(f"Failed to parse {dic}", exc_info=True)
+        else:
+            ms = MetricSet()
+            for metric in om:
+                ms.insert(metric)
+            with open(output_path, "w") as om_file:
+                om_file.write(str(ms))
+
 
 
 if __name__ == "__main__":
@@ -172,64 +233,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=numeric_level)
 
 
-    # Process batches separately
-    if args.batch:
-        file_name = path.basename(args.input)
-        if path.isdir(args.input):
-            start = time()
-            result = process_batch(args.input, args.xml)
-            logger.info(f"Processing {file_name} took {time()-start}")
-        elif path.isfile(args.input) and ".zip" in args.input:
-            temp_dir_base = tempfile.gettempdir() + "/openmetrify_extracted"
-
-            # create random temp directory without conflict
-            suffix=randint(0,999999)
-            temp_dir = f"{temp_dir_base}{suffix:06d}"
-            while path.isdir(temp_dir):
-                suffix=randint(0,999999)
-                temp_dir=f"{temp_dir_base}{suffix:06d}"
-            mkdir(temp_dir)
-
-            # Extract archive
-            start = time()
-            with zipfile.ZipFile(args.input, "r") as zipf:
-                zipf.extractall(temp_dir)
-            logger.info(f"Extracting {file_name} took {time()-start}")
-
-            # Process contents
-            start = time()
-            result = process_batch(temp_dir, args.xml)
-            logger.info(f"Processing {file_name} took {time()-start}")
-            if path.isdir(temp_dir):
-                rmtree(temp_dir)
-        else:
-            logger.info(f"Could not process input path {args.input}")
-            exit(1)
-
-        start = time()
-        res_string = str(result)
-        logger.info(f"Creating output string for {file_name} took {time()-start}")
-        start = time()
-        with open(args.output, "w") as om_file:
-            om_file.write(res_string)
-        logger.info(f"Writing output for {file_name} took {time()-start}")
-
-    else:
-        # Single file processing mode
-        if args.xml:
-            dic = xml_path_to_dict(args.input)
-        else:
-            with open(args.input) as json_file:
-                dic = json.loads(json_file.read())
-
-        try:
-            om = dict_to_openmetrics(dic)
-        except Exception:
-            logger.error(f"Failed to parse {dic}", exc_info=True)
-        else:
-            ms = MetricSet()
-            for metric in om:
-                ms.insert(metric)
-            with open(args.output, "w") as om_file:
-                om_file.write(str(ms))
-
+    openmetrify(is_batch=args.batch, is_xml=args.xml, input_path=args.input, output_path=args.output)

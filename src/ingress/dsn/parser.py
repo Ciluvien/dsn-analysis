@@ -1,35 +1,27 @@
 #!/usr/bin/env python3
 
-from os import path
-import subprocess
-import glob
-import threading
 import logging
 import argparse
-from promtool_wrapper import import_all
 import time
+import glob
+import multiprocessing as mp
+from os import path
+from functools import partial
+from ...common.promtool_wrapper import import_all
+from .openmetrify import openmetrify
 
 logger = logging.getLogger(__name__)
 
-# Path to the required DSN XML files
-in_dir = path.join("../data/to_be_converted/")
-# Path to the temporary OpenMetrics files
-out_dir = path.join("../data/openmetric/")
+DATA_DIR = path.abspath(path.join(path.dirname(__file__),"../../../data/"))
+IN_DIR = path.join(DATA_DIR,"to_be_converted/") # Path to the required DSN XML files
+OUT_DIR = path.join(DATA_DIR,"openmetric/") # Path to the temporary OpenMetrics files
+THREAD_COUNT = 3 # Number of concurrent threads
 
-# Semaphore to limit the number of concurrent subprocesses
-max_concurrent_processes = 3
-semaphore = threading.Semaphore(max_concurrent_processes)
 
-def process_file(f, date, out_dir):
+def process_file(f, out_dir):
+    date = path.basename(f)
     om_file = path.join(out_dir, f'dsn_{date}.om')
-    with semaphore:
-        logger.info(f"Start processing {f}")
-        result = subprocess.run(['python', 'openmetrify.py', '-l', 'INFO', '-b', '-x', f, om_file], capture_output=True, text=True)
-
-        if result.stdout:
-            logger.info(f"openmetrify for {f} stdout:\n{result.stdout.strip()}")
-        if result.stderr:
-            logger.info(f"openmetrify for {f} stderr:\n{result.stderr.strip()}")
+    openmetrify(is_batch=True, is_xml=True, input_path=f, output_path=om_file)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -37,8 +29,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("-l","--log",help="Loglevel",default="info")
     parser.add_argument("-c","--convert_only", action="store_true",help="Do not import into Prometheus")
-    parser.add_argument("--input",help="Folder containing DSN XML zip files", default=in_dir)
-    parser.add_argument("--output",help="Save OpenMetrics files to this directory, requires -c",default=out_dir)
+    parser.add_argument("--input",help="Folder containing DSN XML zip files", default=IN_DIR)
+    parser.add_argument("--output",help="Save OpenMetrics files to this directory, requires -c",default=OUT_DIR)
     args = parser.parse_args()
 
     if args.log:
@@ -59,21 +51,19 @@ if __name__ == "__main__":
         logger.error("Output must be a directory")
         exit(1)
 
-    if args.output != out_dir and not args.convert_only:
-        logger.error(f"Prometheus import only works for {out_dir}. Try adding -c flag.")
+    if args.output != OUT_DIR and not args.convert_only:
+        logger.error(f"Prometheus import only works for {OUT_DIR}. Try adding -c flag.")
         exit(1)
 
     # Process input files
     start_processing_time = time.time()
-    threads = []
-    for f in glob.glob(path.join(args.input, '*')):
-        date = path.basename(f)
-        thread = threading.Thread(target=process_file, args=(f, date, out_dir))
-        threads.append(thread)
-        thread.start()
-
-    for thread in threads:
-        thread.join()
+    files = glob.glob(path.join(args.input, '*'))
+    if not files:
+        logger.warning("Empty input")
+        exit(1)
+    with mp.Pool(THREAD_COUNT) as pool:
+        func = partial(process_file, out_dir=OUT_DIR)
+        pool.map(func, files)
 
     delta_processing_time = time.time() - start_processing_time
     logger.info(f"Converting to OpenMetrics took: {delta_processing_time} s")
@@ -82,7 +72,7 @@ if __name__ == "__main__":
     # Import OpenMetric files into Prometheus
     if not args.convert_only:
         start_import_time = time.time()
-        import_all(out_dir, "1d")
+        import_all(OUT_DIR, "1d")
         delta_import_time = time.time() - start_import_time
         logger.info(f"Importing OpenMetrics into Prometheus took: {delta_import_time} s")
 

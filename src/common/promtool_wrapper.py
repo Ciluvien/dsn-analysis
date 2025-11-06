@@ -6,7 +6,7 @@ from os import path
 import subprocess
 import argparse
 
-INPUT_DIR = path.join("../data/openmetric/")
+INPUT_DIR = path.join("../../data/openmetric/")
 BLOCK_DURATION = "1d"
 
 logger = logging.getLogger(__name__)
@@ -27,9 +27,9 @@ def import_all(directory, block_duration):
              '-r', docker_path, "/prometheus/"]
             , capture_output=True, text=True)
         if result.stdout:
-            logger.info(f"promtool stdout:\n{result.stdout.strip()}")
+            logger.info(result.stdout.strip())
         if result.stderr:
-            logger.info(f"promtool stderr:\n{result.stderr.strip()}")
+            logger.error(result.stderr.strip())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

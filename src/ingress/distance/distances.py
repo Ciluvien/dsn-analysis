@@ -9,8 +9,9 @@ from os import listdir, path
 import argparse
 from time import time
 
-KERNEL_DIR = path.join("../data/kernels/")
-OUT_PATH = path.join("../data/")
+DATA_DIR = path.abspath(path.join(path.dirname(__file__),"../../../data/"))
+KERNEL_DIR = path.join(DATA_DIR,"kernels/")
+OUT_PATH = path.join(DATA_DIR)
 THREAD_COUNT = mp.cpu_count()
 STEP = 5
 

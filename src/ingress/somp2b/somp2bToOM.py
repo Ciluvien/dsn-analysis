@@ -2,11 +2,12 @@
 
 from os import path, listdir
 import xml.etree.ElementTree as ET
-from OpenMetric import Metric, MetricSet
+from ...common.OpenMetric import Metric, MetricSet
 from datetime import datetime, timedelta
 
-INPUT_DIR = path.join("../data/somp2b/")
-OUTPUT_DIR = path.join("../data/openmetric/")
+DATA_DIR = path.abspath(path.join(path.dirname(__file__),"../../../data/"))
+INPUT_DIR = path.join(DATA_DIR,"somp2b/")
+OUTPUT_DIR = path.join(DATA_DIR,"openmetric/")
 
 INTERRUPT_INTERVAL = 60*60
 TIME_INCLUDED_BEFORE_RX = 10
