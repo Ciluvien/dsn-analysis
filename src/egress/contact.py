@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 
 import polars as pl
-from os import path
 import json
 import argparse
 from enum import Enum
+from extract import query_prometheus_CSV
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Distance light travels in one second in km
 LIGHT_SECOND = 299792.458
+
+# URL of the running Prometheus instance
+PROMETHEUS_URL = "http://localhost:9090"
 
 SCHEMA = {
     'Time': pl.Datetime,
@@ -28,7 +34,7 @@ class Format(Enum):
     ION = 2
 
 
-def get_contacts(df: pl.DataFrame):
+def get_contacts(df: pl.LazyFrame):
     # Add column holding time difference between consecutive samples
     df = df.sort(
         pl.col("dish_name"),
@@ -41,7 +47,7 @@ def get_contacts(df: pl.DataFrame):
     )
 
     # Find minimum interval
-    interval = df.filter(pl.col("diff") > 0).min().select("diff").item()
+    interval = df.filter(pl.col("diff") > 0).select("diff").min().collect().item()
     # Assign a number to each contact
     df = df.with_columns(
         pl.when(
@@ -94,7 +100,12 @@ def get_contacts(df: pl.DataFrame):
     return df
 
 
-def format_contacts(df: pl.DataFrame, form: Format, start_time: None | pl.Datetime) -> str:
+def format_contacts(df: pl.LazyFrame, form: Format, start_time_string: str | None) -> str:
+    if start_time_string:
+        start_time = pl.Series([start_time_string]).str.to_datetime().item()
+    else:
+        start_time = None
+
     df = df.with_columns(
         pl.concat_str("target_name","signal_band",separator="_"),
         pl.concat_str("dish_name","signal_band", separator="_")
@@ -133,10 +144,10 @@ def format_contacts(df: pl.DataFrame, form: Format, start_time: None | pl.Dateti
 
     result = ""
     if form == Format.RAW:
-        result = df.write_csv()
+        result = df.collect().write_csv()
     if form == Format.HDTN:
         df = df.drop("range_km")
-        result = json.dumps(json.loads(df.write_json()), indent=4)
+        result = json.dumps(json.loads(df.collect().write_json()), indent=4)
 
     elif form == Format.ION:
         def row_to_string(row: dict, mode: str) -> str:
@@ -170,47 +181,115 @@ def format_contacts(df: pl.DataFrame, form: Format, start_time: None | pl.Dateti
 
 
         contacts = "\n".join(
-            [row_to_string(row, "contact") for row in df.iter_rows(named=True)]
+            [row_to_string(row, "contact") for row in df.collect().iter_rows(named=True)]
         ) + "\n" + "\n".join(
-            [row_to_string(row, "range") for row in df.iter_rows(named=True)]
+            [row_to_string(row, "range") for row in df.collect().iter_rows(named=True)]
         )
         return contacts
 
     return result
 
 
+def contact_query(start, end, step) -> pl.LazyFrame:
+    """Querys Prometheus to acquire data for the given time period"""
+    # TODO: dynamic queries
+    q_data_rate = r'signal_data_rate_b_per_s{station_name=~".*", target_name=~"JWST", dish_activity="Spacecraft Telemetry, Tracking, and Command",signal_activity="true"}'
+    q_range_dsn = r'target_range_km{data_source=~"DSN Now", station_name=~".*", target_name=~"JWST"}'
+    q_range_spice =   r'target_range_km{data_source=~"SPICE", station_name=~".*", target_id=~"-170"}'
+
+    df_data_rate = query_prometheus_CSV(PROMETHEUS_URL, q_data_rate, start, end, step)
+    df_range_dsn = query_prometheus_CSV(PROMETHEUS_URL, q_range_dsn, start, end, step)
+    df_range_spice = query_prometheus_CSV(PROMETHEUS_URL, q_range_spice, start, end, step)
+
+    df_range_dsn = (df_range_dsn
+                    .rename({"target_range_km": 'Value #DSN Distance'})
+                    .select(["Time", "dish_name", "station_name", "target_id", "target_name", "Value #DSN Distance"])
+                    .with_columns(pl.from_epoch(pl.col("Time").floordiv(5).mul(5), time_unit="s").dt.replace_time_zone("UTC")))
+    df_range_spice = (df_range_spice
+                      .rename({"target_range_km": 'Value #SPICE Distance'})
+                      .select(["Time", "target_id", "station_name", "Value #SPICE Distance"])
+                      .with_columns(pl.from_epoch(pl.col("Time").floordiv(5).mul(5), time_unit="s").dt.replace_time_zone("UTC")))
+    df_data_rate = (df_data_rate
+                    .rename({"signal_data_rate_b_per_s": 'Value #Data Rate'})
+                    .select(["Time", "dish_name", "signal_direction", "signal_band", "station_name", "target_id", "target_name", "Value #Data Rate"])
+                    .with_columns(pl.from_epoch(pl.col("Time").floordiv(5).mul(5), time_unit="s").dt.replace_time_zone("UTC")))
+
+    # print(df_range_dsn.head(10).collect())
+    # print(df_range_spice.head(10).collect())
+    # print(df_data_rate.head(10).collect())
+
+    df_range = df_range_dsn.join(
+        other = df_range_spice,
+        on = ['Time','station_name','target_id'],
+        how = "full",
+        coalesce = True
+    )
+
+    # print(df_range.head(50).collect())
+    # print(df_range.tail(50).collect())
+
+    df = df_range.join(
+        other = df_data_rate,
+        on = ['Time','dish_name', 'station_name','target_id','target_name'],
+        how = "full",
+        coalesce = True
+    ).filter(pl.col("Value #Data Rate").is_null().not_())
+
+    return df
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Parse the Grafana data for contacts"
     )
-    parser.add_argument("input", help="path to contacts CSV exported from Grafana")
-    parser.add_argument("-o","--output", help="path to output file; printing to console otherwise")
-    parser.add_argument("-s","--start_time", help="start time for relative contact plans")
+    parser.add_argument("-i", "--input", help="Path to contacts CSV exported from Grafana")
+    parser.add_argument("-o","--output", help="Path to output file; printing to console otherwise")
+    parser.add_argument("-s","--start_time", help="Start time")
+    parser.add_argument("-e","--end_time", help="End time")
+    parser.add_argument("-r", "--relative_time", action="store_true", help="Output real timestamps or duration relative to --start_time")
+    parser.add_argument("--step", help="Step size", default="5s")
     parser.add_argument("-f","--format",help="DTN contact plan format (RAW, HDTN, ION)")
+    parser.add_argument("-l", "--log", help="Loglevel", default="info")
     args = parser.parse_args()
 
+    if args.log:
+        numeric_level = getattr(logging, args.log.upper(), None)
+        if not isinstance(numeric_level, int):
+            raise ValueError('Invalid log level: %s' % args.log)
+    else:
+        numeric_level = logging.INFO
+    logging.basicConfig(level=numeric_level)
+
+    # Configure polars for easier debugging
+    pl.Config.set_tbl_width_chars(110)
+    pl.Config.set_tbl_rows(50)
+    pl.Config.set_tbl_cols(-1)
+
     # Parse args
+    if not args.input and not (args.start_time and args.end_time):
+        exit(1)
+
     if args.format:
         plan_format = Format[args.format]
     else:
         plan_format = Format.RAW
 
-    if args.start_time:
-        start_time = pl.Series([args.start_time]).str.to_datetime().item()
+
+    if args.input:
+        # Read CSV exported from Grafana
+        df = pl.scan_csv(args.input, schema=SCHEMA)
     else:
-        start_time = None
-
-    # Read CSV
-    df = pl.read_csv(args.input, schema=SCHEMA)
-
-    # Configure polars for easier debugging
-    pl.Config.set_tbl_width_chars(110)
-    pl.Config.set_tbl_rows(100)
-    pl.Config.set_tbl_cols(-1)
+        # Query Prometheus for specified parameters
+        df = contact_query(args.start_time, args.end_time, args.step)
 
     # Find contacts and build plan
     contacts = get_contacts(df)
-    plan = format_contacts(contacts, plan_format, start_time)
+    if args.relative_time:
+        plan = format_contacts(contacts, plan_format, args.start_time)
+    else:
+        plan = format_contacts(contacts, plan_format, None)
+
 
     # Write output
     if args.output:
