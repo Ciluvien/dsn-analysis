@@ -190,12 +190,23 @@ def format_contacts(df: pl.LazyFrame, form: Format, start_time_string: str | Non
     return result
 
 
-def contact_query(start, end, step) -> pl.LazyFrame:
+def contact_query(
+        start: str,
+        end: str,
+        step: str,
+        stations: list[str],
+        targets: list[str]) -> pl.LazyFrame:
     """Querys Prometheus to acquire data for the given time period"""
-    # TODO: dynamic queries
-    q_data_rate = r'signal_data_rate_b_per_s{station_name=~".*", target_name=~"JWST", dish_activity="Spacecraft Telemetry, Tracking, and Command",signal_activity="true"}'
-    q_range_dsn = r'target_range_km{data_source=~"DSN Now", station_name=~".*", target_name=~"JWST"}'
-    q_range_spice =   r'target_range_km{data_source=~"SPICE", station_name=~".*", target_id=~"-170"}'
+
+    alt_str = lambda l : "|".join(l)
+
+    station_string = alt_str(stations)
+    target_string = alt_str(targets)
+
+    q_data_rate = f'signal_data_rate_b_per_s{{station_name=~"{station_string}", target_name=~"{target_string}", dish_activity="Spacecraft Telemetry, Tracking, and Command",signal_activity="true"}}'
+    q_range_dsn = f'target_range_km{{data_source=~"DSN Now", station_name=~"{station_string}", target_name=~"{target_string}"}}'
+    # TODO: query target IDs based on provided names
+    q_range_spice =   f'target_range_km{{data_source=~"SPICE", station_name=~"{station_string}"}}'
 
     df_data_rate = query_prometheus_CSV(PROMETHEUS_URL, q_data_rate, start, end, step)
     df_range_dsn = query_prometheus_CSV(PROMETHEUS_URL, q_range_dsn, start, end, step)
@@ -241,16 +252,24 @@ def contact_query(start, end, step) -> pl.LazyFrame:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Parse the Grafana data for contacts"
+        description="Parse the Prometheus data for contacts"
     )
-    parser.add_argument("-i", "--input", help="Path to contacts CSV exported from Grafana")
     parser.add_argument("-o","--output", help="Path to output file; printing to console otherwise")
-    parser.add_argument("-s","--start_time", help="Start time")
-    parser.add_argument("-e","--end_time", help="End time")
-    parser.add_argument("-r", "--relative_time", action="store_true", help="Output real timestamps or duration relative to --start_time")
-    parser.add_argument("--step", help="Step size", default="5s")
-    parser.add_argument("-f","--format",help="DTN contact plan format (RAW, HDTN, ION)")
+    parser.add_argument("-r", "--relative_time", action="store_true", help="Output real timestamps or duration relative to specified start time")
+    parser.add_argument("-f","--format",help="DTN contact plan format (RAW, HDTN, ION)", type=lambda x: Format[x], default = Format.RAW)
     parser.add_argument("-l", "--log", help="Loglevel", default="info")
+    subparsers = parser.add_subparsers(help="Subcommand help", dest="subparser_name")
+
+    parser_grafana = subparsers.add_parser("parse", help="For exports from the Grafana Dashboard")
+    parser_grafana.add_argument("input", help="Path to contacts CSV exported from Grafana")
+    parser_grafana.add_argument("-s","--start_time", help="Start time")
+
+    parser_prom = subparsers.add_parser("create", help="Query Prometheus automatically")
+    parser_prom.add_argument("start_time", help="Start time")
+    parser_prom.add_argument("end_time", help="End time")
+    parser_prom.add_argument("-t","--targets", help="Comma separated string of target names", default=[".+"], type=lambda x: [str(item) for item in x.split(",")])
+    parser_prom.add_argument("-s","--stations", help="Comma separated string of station names", default=[".+"], type=lambda x: [str(item) for item in x.split(",")])
+    parser_prom.add_argument("--step", help="Step size", default="5s")
     args = parser.parse_args()
 
     if args.log:
@@ -267,29 +286,23 @@ if __name__ == "__main__":
     pl.Config.set_tbl_cols(-1)
 
     # Parse args
-    if not args.input and not (args.start_time and args.end_time):
-        exit(1)
-
-    if args.format:
-        plan_format = Format[args.format]
-    else:
-        plan_format = Format.RAW
-
-
-    if args.input:
-        # Read CSV exported from Grafana
-        df = pl.scan_csv(args.input, schema=SCHEMA)
-    else:
-        # Query Prometheus for specified parameters
-        df = contact_query(args.start_time, args.end_time, args.step)
+    match args.subparser_name:
+        case "parse":
+            # Read CSV exported from Grafana
+            df = pl.scan_csv(args.input, schema=SCHEMA)
+        case "create":
+            # Query Prometheus for specified parameters
+            df = contact_query(args.start_time, args.end_time, args.step, args.stations, args.targets)
+        case _:
+            logger.error("Specify one of parse of create")
+            exit(1)
 
     # Find contacts and build plan
     contacts = get_contacts(df)
     if args.relative_time:
-        plan = format_contacts(contacts, plan_format, args.start_time)
+        plan = format_contacts(contacts, args.format, args.start_time)
     else:
-        plan = format_contacts(contacts, plan_format, None)
-
+        plan = format_contacts(contacts, args.format, None)
 
     # Write output
     if args.output:

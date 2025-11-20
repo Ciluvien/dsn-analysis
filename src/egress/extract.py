@@ -13,7 +13,8 @@ MAX_INTERVAL_COUNT = 1024
 logger = logging.getLogger(__name__)
 
 def prepare_query_string(query) -> str:
-    return re.sub(r'(\w+)=([^,}]+)', r'\1="\2"', query)
+    """Add quotation marks around label values, in case the console ate them"""
+    return re.sub(r'(\w+)=[~]["]([^,}]+)["]', r'\1=~"\2"', query)
 
 def split_time_range(start, end, count) -> list[str]:
     start = dt.datetime.fromisoformat(start)
@@ -114,6 +115,10 @@ def query_prometheus_CSV(
     for metric in response_dict.values():
         csv = matrixToCSV(metric)
         df = pl.concat([df, csv], how="diagonal_relaxed")
+
+
+    if df.select(pl.len()).collect().item() == 0:
+        logger.warning(f"Dataframe for query {query} is empty")
 
     return df
 
