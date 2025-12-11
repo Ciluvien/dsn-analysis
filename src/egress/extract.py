@@ -2,11 +2,13 @@
 import argparse
 import logging
 import requests
+import uuid
 import re
 import json
 import datetime as dt
 import polars as pl
 from promToCSV import matrixToCSV
+from os import path, mkdir
 
 MAX_INTERVAL_COUNT = 1024
 
@@ -111,12 +113,18 @@ def query_prometheus_CSV(
         step: str) -> pl.LazyFrame:
 
     response_dict = query_prometheus_split(prometheus, query, start, end, step)
-    df = pl.LazyFrame({})
-    for metric in response_dict.values():
-        csv = matrixToCSV(metric)
-        df = pl.concat([df, csv], how="diagonal_relaxed")
 
+    temp_dir = f"/tmp/{uuid.uuid4()}"
+    try:
+        mkdir(temp_dir)
+    except FileExistsError:
+        logger.info("Temp dir already exists")
 
+    for index, metric in enumerate(response_dict.values()):
+        temp_file_path = path.join(temp_dir,f"{index}.parquet")
+        matrixToCSV(metric).sink_parquet(temp_file_path)
+
+    df = pl.scan_parquet(f"{temp_dir}/*")
     if df.select(pl.len()).collect().item() == 0:
         logger.warning(f"Dataframe for query {query} is empty")
 

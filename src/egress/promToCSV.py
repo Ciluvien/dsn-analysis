@@ -27,15 +27,6 @@ def matrixToCSV(matrix: dict) -> pl.LazyFrame:
 
         df = pl.LazyFrame(metric_as_table)
 
-        # Cast Int to Float for value columns where both can appear
-        # if metric_name in result.collect_schema().names():
-        #     df_type = df.select(metric_name).collect_schema().dtypes()[0]
-        #     result_type = result.select(metric_name).collect_schema().dtypes()[0]
-        #     if df_type.is_integer() and result_type.is_float():
-        #         df = df.cast({metric_name: result_type})
-        #     elif df_type.is_float() and result_type.is_integer():
-        #         result = result.cast({metric_name: df_type})
-
         result = pl.concat([result, df], how="diagonal_relaxed")
 
     return result
